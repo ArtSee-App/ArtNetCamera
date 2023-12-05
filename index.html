@@ -1,153 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Real-Time Object Detection</title>
+    <meta charset="UTF-8">
+    <title>YOLOv8 Object Detection</title>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
-        body, html {
+        body,
+        html {
             margin: 0;
             padding: 0;
-            width: 100%;
             height: 100%;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            /* Optional: to remove scrollbar */
         }
-        #video, #canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
+
+        canvas,
+        video {
+            position: absolute;
             width: 100%;
             height: 100%;
+        }
+
+        video {
+            display: none;
         }
     </style>
 </head>
+
 <body>
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
-
+    <video id="videoFeed" autoplay playsinline width="640" height="480"></video>
+    <canvas width="640" height="480"></canvas>
     <script>
-        // Initialization
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
+        const video = document.getElementById('videoFeed');
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        let model = null;
 
-        // Load ONNX model
-        async function loadModel() {
-            const model = await ort.InferenceSession.create('best.onnx');
-            return model;
-        }
-
-        // Start video stream
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    video.play();
-                };
-            })
-            .catch(err => {
-                console.error('Error accessing the camera', err);
-            });
-
-        // Main detection function
-        async function detectObjects() {
-            const model = await loadModel();
-            video.addEventListener('play', async () => {
-                while (true) {
-                    if (video.paused || video.ended) {
-                        break;
+        // Function to start the video stream
+        async function startVideo() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
                     }
-                    await processFrame(model);
-                    await new Promise(r => setTimeout(r, 100)); // Adjust detection frequency
+                });
+                video.srcObject = stream;
+            } catch (error) {
+                console.error('Error accessing the camera:', error);
+            }
+        }
+
+        video.addEventListener('loadedmetadata', () => {
+            processVideo();
+        });
+
+        async function processVideo() {
+            if (video.readyState === 4) {
+                // Cropping the center 640x640 region from the video frame
+                ctx.drawImage(video, (video.videoWidth - 640) / 2, (video.videoHeight - 640) / 2, 640, 640, 0, 0, 640, 640);
+                const imgData = ctx.getImageData(0, 0, 640, 640);
+
+                const boxes = await detect_objects_on_image(imgData);
+                draw_boxes(boxes);
+            }
+            requestAnimationFrame(processVideo);
+        }
+
+        // Initialize your YOLO model here
+        async function loadModel() {
+            // Load your model
+            model = await ort.InferenceSession.create("best.onnx");
+        }
+
+        async function detect_objects_on_image(imgData) {
+            const input = prepare_input(imgData);
+            const output = await run_model(input);
+            return process_output(output, 640, 480);
+        }
+
+        function prepare_input(imgData) {
+            const pixels = imgData.data;
+            const red = [], green = [], blue = [];
+            for (let i = 0; i < pixels.length; i += 4) {
+                red.push(pixels[i] / 255.0);
+                green.push(pixels[i + 1] / 255.0);
+                blue.push(pixels[i + 2] / 255.0);
+            }
+            return [...red, ...green, ...blue];
+        }
+
+        async function run_model(input) {
+            // Adjust the tensor dimensions to match the image data
+            const inputTensor = new ort.Tensor(Float32Array.from(input), [1, 3, 640, 640]);
+            const outputs = await model.run({ images: inputTensor });
+            return outputs["output0"].data;
+        }
+
+        function process_output(output, img_width, img_height) {
+            let boxes = [];
+            for (let index = 0; index < 8400; index++) {
+                const [class_id, prob] = [...Array(80).keys()]
+                    .map(col => [col, output[8400 * (col + 4) + index]])
+                    .reduce((accum, item) => item[1] > accum[1] ? item : accum, [0, 0]);
+                if (prob < 0.5) {
+                    continue;
                 }
+                const label = yolo_classes[class_id];
+                const xc = output[index];
+                const yc = output[8400 + index];
+                const w = output[2 * 8400 + index];
+                const h = output[3 * 8400 + index];
+                const x1 = (xc - w / 2) / 640 * img_width;
+                const y1 = (yc - h / 2) / 640 * img_height;
+                const x2 = (xc + w / 2) / 640 * img_width;
+                const y2 = (yc + h / 2) / 640 * img_height;
+                boxes.push([x1, y1, x2, y2, label, prob]);
+            }
+
+            boxes = boxes.sort((box1, box2) => box2[5] - box1[5])
+            const result = [];
+            while (boxes.length > 0) {
+                result.push(boxes[0]);
+                boxes = boxes.filter(box => iou(boxes[0], box) < 0.7);
+            }
+            return result;
+        }
+
+        function iou(box1, box2) {
+            return intersection(box1, box2) / union(box1, box2);
+        }
+
+        function union(box1, box2) {
+            const [box1_x1, box1_y1, box1_x2, box1_y2] = box1;
+            const [box2_x1, box2_y1, box2_x2, box2_y2] = box2;
+            const box1_area = (box1_x2 - box1_x1) * (box1_y2 - box1_y1)
+            const box2_area = (box2_x2 - box2_x1) * (box2_y2 - box2_y1)
+            return box1_area + box2_area - intersection(box1, box2)
+        }
+
+        function intersection(box1, box2) {
+            const [box1_x1, box1_y1, box1_x2, box1_y2] = box1;
+            const [box2_x1, box2_y1, box2_x2, box2_y2] = box2;
+            const x1 = Math.max(box1_x1, box2_x1);
+            const y1 = Math.max(box1_y1, box2_y1);
+            const x2 = Math.min(box1_x2, box2_x2);
+            const y2 = Math.min(box1_y2, box2_y2);
+            return (x2 - x1) * (y2 - y1)
+        }
+
+        function draw_boxes(boxes) {
+            // Assuming canvas and ctx (canvas context) are already defined in the scope
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // Draw the current video frame
+
+            ctx.strokeStyle = "#00FF00";
+            ctx.lineWidth = 3;
+            ctx.font = "18px serif";
+
+            boxes.forEach(([x1, y1, x2, y2, label]) => {
+                // Draw bounding box
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                // Draw label background
+                ctx.fillStyle = "#00ff00";
+                const width = ctx.measureText(label).width;
+                ctx.fillRect(x1, y1 - 25, width + 10, 25);
+
+                // Draw label text
+                ctx.fillStyle = "#000000";
+                ctx.fillText(label, x1 + 5, y1 - 5);
             });
         }
 
-        // Process each frame
-        async function processFrame(model) {
-            // Preprocess input (resize to 1x3x640x640, normalize, etc.)
-            const preprocessedData = preprocess(video);
+        const yolo_classes = ['tablo'];
 
-            // Run model
-            const tensor = new ort.Tensor('float32', preprocessedData.data, [1, 3, 640, 640]);
-            const result = await model.run({ 'images': tensor });
-            console.log(result); // Add this line to inspect the output structure
+        // Load the model and start the video
+        loadModel();
+        startVideo();
 
-
-            // Postprocess and draw detections
-            drawDetections(result, video.videoWidth, video.videoHeight);
-        }
-
-        // Preprocessing function (resize, normalize)
-        function preprocess(videoElement) {
-        const width = 640;
-        const height = 640;
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-
-        // Draw the video frame to the canvas
-        ctx.drawImage(videoElement, 0, 0, width, height);
-
-        // Extract pixel data
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-
-        // Normalize pixel data
-        const input = new Float32Array(3 * width * height);
-        for (let i = 0; i < height * width; ++i) {
-            input[i * 3] = (data[i * 4] / 255) - 0.5;       // Red
-            input[i * 3 + 1] = (data[i * 4 + 1] / 255) - 0.5; // Green
-            input[i * 3 + 2] = (data[i * 4 + 2] / 255) - 0.5; // Blue
-        }
-
-        return { data: input, width, height };
-    }
-
-        // Function to draw detections on canvas
-        function drawDetections(output, originalWidth, originalHeight) {
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Assuming the output tensor's data is a Float32Array with the shape [1, 5, 8400]
-    // Convert tensor to array for easier handling
-    const detectionData = output.output0.data;
-    const numDetections = output.output0.dims[2]; // should be 8400
-    const dataPerDetection = output.output0.dims[1]; // should be 5
-
-    for (let i = 0; i < numDetections; i++) {
-        const offset = i * dataPerDetection;
-        const x_center = detectionData[offset] * originalWidth;
-        const y_center = detectionData[offset + 1] * originalHeight;
-        const width = detectionData[offset + 2] * originalWidth;
-        const height = detectionData[offset + 3] * originalHeight;
-        const confidence = detectionData[offset + 4];
-
-        // Check for a confidence threshold to determine if the detection is valid
-        if (confidence > 0.9) {
-            // Convert center coordinates to top-left coordinates
-            const x = x_center - (width / 2);
-            const y = y_center - (height / 2);
-
-            // Draw bounding box and label
-            ctx.strokeStyle = '#FF0000'; // red color for bounding box
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x, y, width, height);
-
-            // Label for 'tablo' class
-            const label = `Tablo, Conf: ${(confidence * 100).toFixed(2)}%`;
-            ctx.fillStyle = '#FF0000';
-            ctx.fillText(label, x, y);
-        }
-    }
-}
-
-
-        // Start detection
-        detectObjects();
     </script>
 </body>
+
 </html>
