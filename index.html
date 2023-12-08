@@ -6,31 +6,39 @@
     <title>YOLOv8 Object Detection</title>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <style>
-        body,
-        html {
+        body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            overflow: hidden;
-            /* Optional: to remove scrollbar */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
-        canvas,
-        video {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
+        #rightVideoContainer {
+    margin: 10px;
+    position: relative;
+}
 
-        video {
-            display: none;
-        }
+canvas, video {
+    width: 640px;
+    height: 480px;
+}
+
+#videoFeed {
+    display: none;
+}
+
     </style>
 </head>
 
 <body>
     <video id="videoFeed" autoplay playsinline width="640" height="480"></video>
-    <canvas width="640" height="480"></canvas>
+    <div id="rightVideoContainer" style="position: relative;">
+        <video id="simpleVideoFeed" autoplay playsinline width="640" height="480"></video>
+        <canvas width="640" height="480" style="position: absolute; top: 0; left: 0;"></canvas>
+    </div>
     <script>
         const video = document.getElementById('videoFeed');
         const canvas = document.querySelector('canvas');
@@ -94,6 +102,7 @@
             // Adjust the tensor dimensions to match the image data
             const inputTensor = new ort.Tensor(Float32Array.from(input), [1, 3, 640, 640]);
             const outputs = await model.run({ images: inputTensor });
+            console.log(outputs["output0"].data);
             return outputs["output0"].data;
         }
 
@@ -149,35 +158,54 @@
             return (x2 - x1) * (y2 - y1)
         }
 
-        function draw_boxes(boxes) {
-            // Assuming canvas and ctx (canvas context) are already defined in the scope
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // Draw the current video frame
+function draw_boxes(boxes) {
+    // Clear previous drawings
+    ctx.clearRect(0, 0, canvas.width, canvas.height); 
 
-            ctx.strokeStyle = "#00FF00";
-            ctx.lineWidth = 3;
-            ctx.font = "18px serif";
+    // Do not draw the video frame from videoFeed, only draw boxes
+    ctx.strokeStyle = "#00FF00";
+    ctx.lineWidth = 3;
+    ctx.font = "18px serif";
 
-            boxes.forEach(([x1, y1, x2, y2, label]) => {
-                // Draw bounding box
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    boxes.forEach(([x1, y1, x2, y2, label]) => {
+        // Draw bounding box
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-                // Draw label background
-                ctx.fillStyle = "#00ff00";
-                const width = ctx.measureText(label).width;
-                ctx.fillRect(x1, y1 - 25, width + 10, 25);
+        // Draw label background
+        ctx.fillStyle = "#00ff00";
+        const width = ctx.measureText(label).width;
+        ctx.fillRect(x1, y1 - 25, width + 10, 25);
 
-                // Draw label text
-                ctx.fillStyle = "#000000";
-                ctx.fillText(label, x1 + 5, y1 - 5);
-            });
-        }
+        // Draw label text
+        ctx.fillStyle = "#000000";
+        ctx.fillText(label, x1 + 5, y1 - 5);
+    });
+}
 
         const yolo_classes = ['tablo'];
+
+        // Function to start the second video stream
+async function startSimpleVideo() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'environment',
+            }
+        });
+        document.getElementById('simpleVideoFeed').srcObject = stream;
+    } catch (error) {
+        console.error('Error accessing the camera for simple video:', error);
+    }
+}
+
+// Start the second video feed
+
 
         // Load the model and start the video
         loadModel();
         startVideo();
+        startSimpleVideo();
+
 
     </script>
 </body>
