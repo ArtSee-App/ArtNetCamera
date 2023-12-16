@@ -39,7 +39,7 @@
         video,
         canvas {
             position: absolute;
-            object-fit: cover;
+            object-fit: contain;
             top: 0;
             left: 0;
         }
@@ -82,8 +82,10 @@
             padding: 20px;
             border-radius: 10px;
             transition: opacity 2s ease-out;
-    opacity: 1; /* Start fully visible */
-    display: block; /* Ensure it's visible by default */
+            opacity: 1;
+            /* Start fully visible */
+            display: block;
+            /* Ensure it's visible by default */
 
 
         }
@@ -96,6 +98,7 @@
             var floatingMessage = document.getElementById("floatingMessage");
             var model;
             var cameraMode = "environment"; // or "user"
+            var predictions = []; // Declare predictions here
 
             const startVideoStreamPromise = navigator.mediaDevices
                 .getUserMedia({
@@ -137,10 +140,10 @@
             Promise.all([startVideoStreamPromise, loadModelPromise]).then(function () {
                 resizeCanvas();
                 detectFrame();
-                $("#loadingMessage").fadeOut(1000, function() {
-        // After fade out completes, hide the element
-        $(this).hide();
-    });
+                $("#loadingMessage").fadeOut(1000, function () {
+                    // After fade out completes, hide the element
+                    $(this).hide();
+                });
             });
 
             var canvas, ctx;
@@ -162,6 +165,14 @@
                     }, 200); // Reset after the animation duration
                 }
             }
+
+            function sendImageToReactNative(imageData) {
+                if (window.ReactNativeWebView) {
+                    console.log('clicked');
+                    window.ReactNativeWebView.postMessage(imageData);
+                }
+            }
+
 
             function videoDimensions(video) {
                 // Ratio of the video's intrisic dimensions
@@ -192,6 +203,55 @@
                 resizeCanvas();
             });
 
+            function handleCanvasInteraction(event) {
+                event.preventDefault();
+
+                let x, y;
+                if (event.type === 'touchstart') {
+                    const touch = event.changedTouches[0];
+                    const rect = canvas[0].getBoundingClientRect();
+                    x = touch.clientX - rect.left;
+                    y = touch.clientY - rect.top;
+                } else {
+                    const rect = canvas[0].getBoundingClientRect();
+                    x = event.clientX - rect.left;
+                    y = event.clientY - rect.top;
+                }
+
+                // Existing logic to find which rectangle was clicked or touched
+                const clickedPrediction = predictions.find(p =>
+                    x > (p.bbox.x - p.bbox.width / 2) &&
+                    x < (p.bbox.x + p.bbox.width / 2) &&
+                    y > (p.bbox.y - p.bbox.height / 2) &&
+                    y < (p.bbox.y + p.bbox.height / 2));
+
+                    if (clickedPrediction) {
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = clickedPrediction.bbox.width;
+                        tempCanvas.height = clickedPrediction.bbox.height;
+                        const tempCtx = tempCanvas.getContext('2d');
+
+                        // Adjust these values based on how your predictions are scaled to the video element
+                        const scaleX = video.videoWidth / canvas[0].width;
+                        const scaleY = video.videoHeight / canvas[0].height;
+                        const sourceX = (clickedPrediction.bbox.x - clickedPrediction.bbox.width / 2) * scaleX;
+                        const sourceY = (clickedPrediction.bbox.y - clickedPrediction.bbox.height / 2) * scaleY;
+                        const sourceWidth = clickedPrediction.bbox.width * scaleX;
+                        const sourceHeight = clickedPrediction.bbox.height * scaleY;
+
+                        tempCtx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                        const dataURL = tempCanvas.toDataURL('image/png');
+                        sendImageToReactNative(dataURL);
+
+                    $("#clickMessage").text("Clicked on: " + clickedPrediction.class).css('display', 'block');
+                    setTimeout(function () {
+                        $("#clickMessage").css('display', 'none');
+                    }, 3000);
+                }
+            }
+
+
             const resizeCanvas = function () {
                 $("canvas").remove();
 
@@ -220,6 +280,11 @@
                 });
 
                 $("body").append(canvas);
+
+
+
+                canvas.on('click', handleCanvasInteraction);
+                canvas.on('touchstart', handleCanvasInteraction);
             };
 
             const renderPredictions = function (predictions) {
@@ -286,7 +351,8 @@
                 model.configure({ threshold: 0.8 });
                 model
                     .detect(video)
-                    .then(function (predictions) {
+                    .then(function (preds) {
+                        predictions = preds;
                         requestAnimationFrame(detectFrame);
                         renderPredictions(predictions);
 
@@ -315,6 +381,10 @@
     <div id="loadingMessage">Loading AI...</div>
     <video id="video" autoplay muted playsinline></video>
     <div id="floatingMessage"></div>
+    <div id="clickMessage"
+        style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background-color: rgba(255, 255, 255, 0.8); color: black; padding: 10px; border-radius: 5px; display: none;">
+        Clicked!</div>
+
 </body>
 
 </html>
