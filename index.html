@@ -204,28 +204,34 @@
             });
 
             function handleCanvasInteraction(event) {
-                event.preventDefault();
+    event.preventDefault();
 
-                let x, y;
-                if (event.type === 'touchstart') {
-                    const touch = event.changedTouches[0];
-                    const rect = canvas[0].getBoundingClientRect();
-                    x = touch.clientX - rect.left;
-                    y = touch.clientY - rect.top;
-                } else {
-                    const rect = canvas[0].getBoundingClientRect();
-                    x = event.clientX - rect.left;
-                    y = event.clientY - rect.top;
-                }
+    let x, y;
+    const rect = canvas[0].getBoundingClientRect();
+    
+    if (event.type === 'touchstart') {
+        const touch = event.changedTouches[0];
+        x = touch.clientX - rect.left;
+        y = touch.clientY - rect.top;
+    } else {
+        x = event.clientX - rect.left;
+        y = event.clientY - rect.top;
+    }
 
-                // Existing logic to find which rectangle was clicked or touched
-                const clickedPrediction = predictions.find(p =>
-                    x > (p.bbox.x - p.bbox.width / 2) &&
-                    x < (p.bbox.x + p.bbox.width / 2) &&
-                    y > (p.bbox.y - p.bbox.height / 2) &&
-                    y < (p.bbox.y + p.bbox.height / 2));
+    // Adjust coordinates based on the scale factor
+    const scaleX = video.videoWidth / rect.width;
+    const scaleY = video.videoHeight / rect.height;
+    x = x * scaleX;
+    y = y * scaleY;
 
-                    if (clickedPrediction) {
+    // Existing logic to find which rectangle was clicked or touched
+    const clickedPrediction = predictions.find(p =>
+        x > (p.bbox.x - p.bbox.width / 2) &&
+        x < (p.bbox.x + p.bbox.width / 2) &&
+        y > (p.bbox.y - p.bbox.height / 2) &&
+        y < (p.bbox.y + p.bbox.height / 2));
+
+    if (clickedPrediction) {
                         const tempCanvas = document.createElement('canvas');
                         tempCanvas.width = clickedPrediction.bbox.width;
                         tempCanvas.height = clickedPrediction.bbox.height;
