@@ -167,11 +167,44 @@
             }
 
             function sendImageToReactNative(imageData) {
+                console.log('clicked');
                 if (window.ReactNativeWebView) {
-                    console.log('clicked');
                     window.ReactNativeWebView.postMessage(imageData);
                 }
             }
+
+            async function sendImageToFastAPIServer(imageData) {
+                // Create a FormData instance
+                var formData = new FormData();
+                // Convert the base64 image data to a blob
+                const fetchResponse = await fetch(imageData);
+                const blob = await fetchResponse.blob();
+                // Append the blob as 'file', which is the expected field name for the file upload
+                formData.append('file', blob, 'image.png');
+
+                // Send the request to the FastAPI server
+                try {
+                    let response = await fetch('https://6954-5-12-21-205.ngrok-free.app/upload-image/', {
+                        method: 'POST',
+                        body: formData // FormData will be sent as 'multipart/form-data'
+                        // Don't set 'Content-Type': 'multipart/form-data' here, fetch does it automatically, including the boundary parameter
+                    });
+                    // Check if the request was successful
+                    if (response.ok) {
+                        let json = await response.json();
+                        console.log(JSON.stringify(json));
+                        if (window.ReactNativeWebView) {
+                            window.ReactNativeWebView.postMessage(JSON.stringify(json));
+                        }
+                    } else {
+                        // Handle HTTP errors
+                        console.error('Server response was not ok.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+
 
 
             function videoDimensions(video) {
@@ -204,51 +237,51 @@
             });
 
             function handleCanvasInteraction(event) {
-    event.preventDefault();
+                event.preventDefault();
 
-    let x, y;
-    const rect = canvas[0].getBoundingClientRect();
-    
-    if (event.type === 'touchstart') {
-        const touch = event.changedTouches[0];
-        x = touch.clientX - rect.left;
-        y = touch.clientY - rect.top;
-    } else {
-        x = event.clientX - rect.left;
-        y = event.clientY - rect.top;
-    }
+                let x, y;
+                const rect = canvas[0].getBoundingClientRect();
 
-    // Adjust coordinates based on the scale factor
-    const scaleX = video.videoWidth / rect.width;
-    const scaleY = video.videoHeight / rect.height;
-    x = x * scaleX;
-    y = y * scaleY;
+                if (event.type === 'touchstart') {
+                    const touch = event.changedTouches[0];
+                    x = touch.clientX - rect.left;
+                    y = touch.clientY - rect.top;
+                } else {
+                    x = event.clientX - rect.left;
+                    y = event.clientY - rect.top;
+                }
 
-    // Existing logic to find which rectangle was clicked or touched
-    const clickedPrediction = predictions.find(p =>
-        x > (p.bbox.x - p.bbox.width / 2) &&
-        x < (p.bbox.x + p.bbox.width / 2) &&
-        y > (p.bbox.y - p.bbox.height / 2) &&
-        y < (p.bbox.y + p.bbox.height / 2));
+                // Adjust coordinates based on the scale factor
+                const scaleX = video.videoWidth / rect.width;
+                const scaleY = video.videoHeight / rect.height;
+                x = x * scaleX;
+                y = y * scaleY;
 
-    if (clickedPrediction) {
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = clickedPrediction.bbox.width;
-                        tempCanvas.height = clickedPrediction.bbox.height;
-                        const tempCtx = tempCanvas.getContext('2d');
+                // Existing logic to find which rectangle was clicked or touched
+                const clickedPrediction = predictions.find(p =>
+                    x > (p.bbox.x - p.bbox.width / 2) &&
+                    x < (p.bbox.x + p.bbox.width / 2) &&
+                    y > (p.bbox.y - p.bbox.height / 2) &&
+                    y < (p.bbox.y + p.bbox.height / 2));
 
-                        // Adjust these values based on how your predictions are scaled to the video element
-                        const scaleX = video.videoWidth / canvas[0].width;
-                        const scaleY = video.videoHeight / canvas[0].height;
-                        const sourceX = (clickedPrediction.bbox.x - clickedPrediction.bbox.width / 2) * scaleX;
-                        const sourceY = (clickedPrediction.bbox.y - clickedPrediction.bbox.height / 2) * scaleY;
-                        const sourceWidth = clickedPrediction.bbox.width * scaleX;
-                        const sourceHeight = clickedPrediction.bbox.height * scaleY;
+                if (clickedPrediction) {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = clickedPrediction.bbox.width;
+                    tempCanvas.height = clickedPrediction.bbox.height;
+                    const tempCtx = tempCanvas.getContext('2d');
 
-                        tempCtx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, tempCanvas.width, tempCanvas.height);
+                    // Adjust these values based on how your predictions are scaled to the video element
+                    const scaleX = video.videoWidth / canvas[0].width;
+                    const scaleY = video.videoHeight / canvas[0].height;
+                    const sourceX = (clickedPrediction.bbox.x - clickedPrediction.bbox.width / 2) * scaleX;
+                    const sourceY = (clickedPrediction.bbox.y - clickedPrediction.bbox.height / 2) * scaleY;
+                    const sourceWidth = clickedPrediction.bbox.width * scaleX;
+                    const sourceHeight = clickedPrediction.bbox.height * scaleY;
 
-                        const dataURL = tempCanvas.toDataURL('image/png');
-                        sendImageToReactNative(dataURL);
+                    tempCtx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                    const dataURL = tempCanvas.toDataURL('image/png');
+                    sendImageToFastAPIServer(dataURL);
 
                 }
             }
