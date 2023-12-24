@@ -17,6 +17,23 @@
         crossorigin="anonymous"></script>
 
     <script src="https://cdn.roboflow.com/0.2.26/roboflow.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script>
+        // Your web app's Firebase configuration (replace with your config)
+        var firebaseConfig = {
+            apiKey: "AIzaSyBBZrptsnMDFh25B0LvcBmp-n3CF0odUNA",
+            authDomain: "artsee-42c23.firebaseapp.com",
+            databaseURL: "https://artsee-42c23-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "artsee-42c23",
+            storageBucket: "artsee-42c23.appspot.com",
+            messagingSenderId: "587875980821",
+            appId: "1:587875980821:web:51360fb6c025ffacd7e01c",
+            measurementId: "G-CCQQ4RW6BG"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+    </script>
 
     <style>
         html,
@@ -184,7 +201,7 @@
 
                 // Send the request to the FastAPI server
                 try {
-                    let response = await fetch('https://6954-5-12-21-205.ngrok-free.app/upload-image/', {
+                    let response = await fetch('https://830d-5-12-21-205.ngrok-free.app/upload-image/', {
                         method: 'POST',
                         body: formData // FormData will be sent as 'multipart/form-data'
                         // Don't set 'Content-Type': 'multipart/form-data' here, fetch does it automatically, including the boundary parameter
@@ -193,9 +210,13 @@
                     if (response.ok) {
                         let json = await response.json();
                         console.log(JSON.stringify(json));
-                        if (window.ReactNativeWebView) {
-                            window.ReactNativeWebView.postMessage(JSON.stringify(json));
-                        }
+                        var userId = window.firebaseUserId; // This should be set from the Expo app
+                        var userDocRef = firebase.firestore().collection('users').doc(userId);
+                        await userDocRef.set({
+                        apiData: JSON.stringify(json),
+                        updatedAt: new Date()
+                    }, { merge: true });
+
                     } else {
                         // Handle HTTP errors
                         console.error('Server response was not ok.');
@@ -265,6 +286,11 @@
                     y < (p.bbox.y + p.bbox.height / 2));
 
                 if (clickedPrediction) {
+
+                    if (window.ReactNativeWebView) {
+                        window.ReactNativeWebView.postMessage("Detection pressed");
+                    }
+
                     const tempCanvas = document.createElement('canvas');
                     tempCanvas.width = clickedPrediction.bbox.width;
                     tempCanvas.height = clickedPrediction.bbox.height;
