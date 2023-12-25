@@ -136,8 +136,10 @@
         }
 
         .loader {
-            border: 5px solid #f3f3f3; /* Light grey */
-            border-top: 5px solid #3498db; /* Blue */
+            border: 5px solid #f3f3f3;
+            /* Light grey */
+            border-top: 5px solid #3498db;
+            /* Blue */
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -145,17 +147,22 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
-        #loadingMessage, #fetchingDataMessage {
+        #loadingMessage,
+        #fetchingDataMessage {
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
         }
-
     </style>
     <script>
         /*jshint esversion:6*/
@@ -235,13 +242,13 @@
                 }
             }
 
-            async function sendImageToFastAPIServer(imageData) {
-                console.log('clicked');
+            async function sendImageToFastAPIServer(imageData, startTime) {
                 var overlay = document.getElementById('overlay');
                 var fetchingDataMessage = document.getElementById('fetchingDataMessage');
 
                 overlay.style.display = 'block'; // Show the overlay
                 fetchingDataMessage.style.visibility = 'visible'; // Show the fetching message
+
 
                 // Create a FormData instance
                 var formData = new FormData();
@@ -250,20 +257,40 @@
                 const blob = await fetchResponse.blob();
                 // Append the blob as 'file', which is the expected field name for the file upload
                 formData.append('file', blob, 'image.png');
+                let endTime = performance.now(); // End the timer
+
 
                 // Send the request to the FastAPI server
                 try {
-                    // Add a delay of 4 seconds (4000 milliseconds) before proceeding
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    var json = '[[[1402,"Still Life - Vase with Fifteen Sunflowers","Vincent van Gogh","https://uploads7.wikiart.org/images/vincent-van-gogh/still-life-vase-with-fifteen-sunflowers-1888-1.jpg!Large.jpg",4.406303243112493],[1641,"Still Life Vase with Twelve Sunflowers","Vincent van Gogh","https://uploads1.wikiart.org/images/vincent-van-gogh/still-life-vase-with-twelve-sunflowers-1.jpg!Large.jpg",4.807207243878269],[1815,"Red Poppies and Daisies","Vincent van Gogh","https://uploads7.wikiart.org/images/vincent-van-gogh/red-poppies-and-daisies-1890.jpg!Large.jpg",5.220071773693324],[13728,"Ivy in Flower","Henri Matisse","https://uploads3.wikiart.org/images/henri-matisse/ivy-in-flower-1941.jpg!Large.jpg",5.628070756056703],[1401,"Still Life - Vase with Fifteen Sunflowers","Vincent van Gogh","https://uploads5.wikiart.org/images/vincent-van-gogh/still-life-vase-with-fifteen-sunflowers-1888.jpg!Large.jpg",5.759714296460847]],[[1402,"Still Life - Vase with Fifteen Sunflowers","Vincent van Gogh","https://uploads7.wikiart.org/images/vincent-van-gogh/still-life-vase-with-fifteen-sunflowers-1888-1.jpg!Large.jpg",0.1433213621466105],[1641,"Still Life Vase with Twelve Sunflowers","Vincent van Gogh","https://uploads1.wikiart.org/images/vincent-van-gogh/still-life-vase-with-twelve-sunflowers-1.jpg!Large.jpg",0.16889446963365184],[1401,"Still Life - Vase with Fifteen Sunflowers","Vincent van Gogh","https://uploads5.wikiart.org/images/vincent-van-gogh/still-life-vase-with-fifteen-sunflowers-1888.jpg!Large.jpg",0.2190486207481459],[1815,"Red Poppies and Daisies","Vincent van Gogh","https://uploads7.wikiart.org/images/vincent-van-gogh/red-poppies-and-daisies-1890.jpg!Large.jpg",0.23151526160816416],[13728,"Ivy in Flower","Henri Matisse","https://uploads3.wikiart.org/images/henri-matisse/ivy-in-flower-1941.jpg!Large.jpg",0.24861109498027667]]]';
-                    // The code to add data to Firestore
+                    let startTime2 = performance.now(); // Start the timer
+                    let response = await fetch('https://ec60-5-12-245-174.ngrok-free.app/upload-image/', {
+                        method: 'POST',
+                        body: formData // FormData will be sent as 'multipart/form-data'
+                        // Don't set 'Content-Type': 'multipart/form-data' here, fetch does it automatically, including the boundary parameter
+                    });
+                    if (response.ok) {
 
-                    if (window.ReactNativeWebView) {
-                        window.ReactNativeWebView.postMessage(json);
+                        let json = await response.json();
+                        // The code to add data to Firestore
+                        console.log(JSON.stringify(json));
+                        let endTime2 = performance.now(); // End the timer
+                        console.log(`Time taken to prepare the image: ${endTime - startTime} ms`); // Log the time taken
+                        console.log(`Time taken to receive the json: ${endTime2 - startTime2} ms`); // Log the time taken
+
+                        if (window.ReactNativeWebView) {
+                            window.ReactNativeWebView.postMessage(JSON.stringify(json));
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 500)); // 1000 ms = 1 second
+                        overlay.style.display = 'none';
+                        fetchingDataMessage.style.visibility = 'hidden';
+                    } else {
+                        // Handle HTTP errors
+                        console.error('Server response was not ok.');
+                        await new Promise(resolve => setTimeout(resolve, 500)); // 1000 ms = 1 second
+                        overlay.style.display = 'none';
+                        fetchingDataMessage.style.visibility = 'hidden';
+
                     }
-                    await new Promise(resolve => setTimeout(resolve, 500)); // 1000 ms = 1 second
-                    overlay.style.display = 'none';
-                    fetchingDataMessage.style.visibility = 'hidden';
 
                 } catch (error) {
                     console.error('Error:', error);
@@ -307,6 +334,7 @@
 
             function handleCanvasInteraction(event) {
                 event.preventDefault();
+                const startTime = performance.now(); // Start the timer
 
                 let x, y;
                 const rect = canvas[0].getBoundingClientRect();
@@ -352,7 +380,7 @@
                     tempCtx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, tempCanvas.width, tempCanvas.height);
 
                     const dataURL = tempCanvas.toDataURL('image/png');
-                    sendImageToFastAPIServer(dataURL);
+                    sendImageToFastAPIServer(dataURL, startTime);
 
                 }
             }
@@ -484,6 +512,7 @@
 </head>
 
 <body>
+
     <body>
         <div id="loadingMessage" class="hide">
             <div class="loader"></div>
@@ -496,9 +525,9 @@
             Fetching data...
         </div>
         <div id="overlay"></div>
-    
+
     </body>
-    
+
 
 
 </body>
