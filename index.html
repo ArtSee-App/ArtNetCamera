@@ -59,6 +59,7 @@
             object-fit: contain;
             top: 0;
             left: 0;
+            z-index: 1;
         }
 
         #floatingMessage {
@@ -81,6 +82,7 @@
             /* Prevent text from wrapping */
             transition: transform 0.3s ease;
             /* Animate the transform property */
+            z-index:2
         }
 
         .message-change {
@@ -89,19 +91,19 @@
         }
 
         #loadingMessage {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2em;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            opacity: 1;
-            /* Start fully visible */
-            display: block;
-            /* Ensure it's visible by default */
+            position: fixed; /* Changed from absolute to fixed */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background-color: black; /* Full black background */
+    color: white;
+    font-size: 2em;
+            z-index: 3;
 
 
         }
@@ -214,6 +216,11 @@
             Promise.all([startVideoStreamPromise, loadModelPromise]).then(function () {
                 resizeCanvas();
                 detectFrame();
+                var loadingMessage = document.getElementById('loadingMessage');
+                if (loadingMessage) {
+                    loadingMessage.style.display = 'none';
+                }
+
             });
 
             var canvas, ctx;
@@ -263,7 +270,7 @@
                 // Send the request to the FastAPI server
                 try {
                     let startTime2 = performance.now(); // Start the timer
-                    let response = await fetch('https://ec60-5-12-245-174.ngrok-free.app/upload-image/', {
+                    let response = await fetch('https://7162-5-12-245-174.ngrok-free.app/upload-image/', {
                         method: 'POST',
                         body: formData // FormData will be sent as 'multipart/form-data'
                         // Don't set 'Content-Type': 'multipart/form-data' here, fetch does it automatically, including the boundary parameter
