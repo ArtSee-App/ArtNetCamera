@@ -177,6 +177,8 @@
             var model;
             var cameraMode = "environment"; // or "user"
             var predictions = []; // Declare predictions here
+            var lastFrameTime = Date.now();
+            var fps = 0;
 
             const startVideoStreamPromise = navigator.mediaDevices
                 .getUserMedia({
@@ -241,7 +243,7 @@
 
                     setTimeout(() => {
                         floatingMessage.style.transform = 'translateX(-50%) scale(1)';
-                    }, 10); // Reset after the animation duration
+                    }, 200); // Reset after the animation duration
                 }
             }
 
@@ -430,91 +432,85 @@
                 canvas.on('touchstart', handleCanvasInteraction);
             };
 
-            const renderPredictions = function (predictions) {
-                var dimensions = videoDimensions(video);
-                var customText = 'Painting';
-                var scale = 1;
+            function roundRect(ctx, x, y, width, height, radius) {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                ctx.lineTo(x + radius, y + height);
+                ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
+            }
 
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            const renderPredictions = function(predictions) {
+    var dimensions = videoDimensions(video);
+    var customText = 'Painting';
+    var scale = 1;
 
-                predictions.forEach(function (prediction) {
-                    const x = prediction.bbox.x;
-                    const y = prediction.bbox.y;
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    updateMessage(predictions.length > 0);
 
-                    const width = prediction.bbox.width;
-                    const height = prediction.bbox.height;
+    predictions.forEach(function(prediction) {
+        const x = prediction.bbox.x;
+        const y = prediction.bbox.y;
+        const width = prediction.bbox.width;
+        const height = prediction.bbox.height;
 
-                    // Draw the bounding box.
-                    ctx.strokeStyle = prediction.color;
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(
-                        (x - width / 2) / scale,
-                        (y - height / 2) / scale,
-                        width / scale,
-                        height / scale
-                    );
+        // Gradient stroke for rectangle
+        const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+        gradient.addColorStop(0, "white");
+        gradient.addColorStop(0, "black");
 
-                    // Draw the label background.
-                    ctx.fillStyle = prediction.color;
-                    const textWidth = ctx.measureText(customText).width;
-                    const textHeight = parseInt(font, 10); // base 10
-                    ctx.fillRect(
-                        (x - width / 2) / scale,
-                        (y - height / 2) / scale,
-                        textWidth + 8,
-                        textHeight + 4
-                    );
-                });
-                updateMessage(predictions.length > 0);
+        // Rounded rectangle with shadow for detection box
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 4;
+        roundRect(ctx, (x - width / 2) / scale, (y - height / 2) / scale, width / scale, height / scale, 20);
+        ctx.stroke();
+        ctx.restore();
 
-                predictions.forEach(function (prediction) {
-                    const x = prediction.bbox.x;
-                    const y = prediction.bbox.y;
+        // Text with transparent background
+        ctx.font = "italic bold 18px Times New Roman";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = "white"; // Choose a color that contrasts with your canvas
+        ctx.fillText("FPS: " + fps.toFixed(2), 10, 20);
+        ctx.fillText(customText, (x - width / 2) / scale + 4, (y - height / 2) / scale - 20); // Adjust Y position as needed
+    });
+};
 
-                    const width = prediction.bbox.width;
-                    const height = prediction.bbox.height;
-
-                    // Draw the text last to ensure it's on top.
-                    ctx.font = font;
-                    ctx.textBaseline = "top";
-                    ctx.fillStyle = "#000000";
-                    ctx.fillText(
-                        customText,
-                        (x - width / 2) / scale + 4,
-                        (y - height / 2) / scale + 1
-                    );
-                });
-
-            };
 
             var prevTime;
             var pastFrameTimes = [];
             const detectFrame = function () {
-                if (!model) return requestAnimationFrame(detectFrame);
-                model.configure({ threshold: 0.8 });
-                model
-                    .detect(video)
-                    .then(function (preds) {
-                        predictions = preds;
-                        requestAnimationFrame(detectFrame);
-                        renderPredictions(predictions);
+    if (!model) return requestAnimationFrame(detectFrame);
+    model.configure({ threshold: 0.8 });
+    model.detect(video).then(function (preds) {
+        predictions = preds;
+        renderPredictions(predictions);
 
-                        if (prevTime) {
-                            pastFrameTimes.push(Date.now() - prevTime);
-                            if (pastFrameTimes.length > 30) pastFrameTimes.shift();
+        // Calculate FPS
+        var now = Date.now();
+        var elapsed = now - lastFrameTime;
+        if (elapsed > 0) {
+            fps = 1000 / elapsed;
+        }
+        lastFrameTime = now;
 
-                            var total = 0;
-                            _.each(pastFrameTimes, function (t) {
-                                total += t / 1000;
-                            });
-                        }
-                        prevTime = Date.now();
-                    })
-                    .catch(function (e) {
-                        console.log("CAUGHT", e);
-                        requestAnimationFrame(detectFrame);
-                    });
-            };
+        // Call next frame
+        requestAnimationFrame(detectFrame);
+    }).catch(function (e) {
+        console.log("CAUGHT", e);
+        requestAnimationFrame(detectFrame);
+    });
+};
         });
 
     </script>
