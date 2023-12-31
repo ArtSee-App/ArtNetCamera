@@ -475,14 +475,30 @@
         ctx.lineWidth = 4;
         roundRect(ctx, (x - width / 2) / scale, (y - height / 2) / scale, width / scale, height / scale, 20);
         ctx.stroke();
-        ctx.restore();
 
-        // Text with transparent background
-        ctx.font = "italic bold 18px Times New Roman";
+        // Fill the rectangle with a semi-transparent color
+        ctx.fillStyle = "rgba(0, 0, 0, 0.2)"; // Adjust the alpha for transparency level
+        ctx.fill(); // Fill the rounded rectangle
+
+        // Dynamically adjust the font size to fit the rectangle width
+        let fontSize = 18; // Starting font size
+        ctx.font = "italic bold " + fontSize + "px Times New Roman";
+        let textWidth = ctx.measureText(customText).width;
+
+        while (textWidth > width - 10 && fontSize > 8) { // Ensure some padding and minimum font size
+            fontSize--;
+            ctx.font = "italic bold " + fontSize + "px Times New Roman";
+            textWidth = ctx.measureText(customText).width;
+        }
+
+        // Text with transparent background, positioned inside and centered at the top of the rectangle
         ctx.textBaseline = "top";
         ctx.fillStyle = "white"; // Choose a color that contrasts with your canvas
-        ctx.fillText("FPS: " + fps.toFixed(2), 10, 20);
-        ctx.fillText(customText, (x - width / 2) / scale + 4, (y - height / 2) / scale - 20); // Adjust Y position as needed
+        const textX = (x - textWidth / 2) / scale; // Center text inside the rectangle
+        const textY = (y - height / 2) / scale + 4; // Adjust Y position to be at the top inside the rectangle
+        ctx.fillText(customText, textX, textY); // Draw text inside the rectangle
+
+        ctx.restore();
     });
 };
 
@@ -490,27 +506,27 @@
             var prevTime;
             var pastFrameTimes = [];
             const detectFrame = function () {
-    if (!model) return requestAnimationFrame(detectFrame);
-    model.configure({ threshold: 0.8 });
-    model.detect(video).then(function (preds) {
-        predictions = preds;
-        renderPredictions(predictions);
+                if (!model) return requestAnimationFrame(detectFrame);
+                model.configure({ threshold: 0.8 });
+                model.detect(video).then(function (preds) {
+                    predictions = preds;
+                    renderPredictions(predictions);
 
-        // Calculate FPS
-        var now = Date.now();
-        var elapsed = now - lastFrameTime;
-        if (elapsed > 0) {
-            fps = 1000 / elapsed;
-        }
-        lastFrameTime = now;
+                    // Calculate FPS
+                    var now = Date.now();
+                    var elapsed = now - lastFrameTime;
+                    if (elapsed > 0) {
+                        fps = 1000 / elapsed;
+                    }
+                    lastFrameTime = now;
 
-        // Call next frame
-        requestAnimationFrame(detectFrame);
-    }).catch(function (e) {
-        console.log("CAUGHT", e);
-        requestAnimationFrame(detectFrame);
-    });
-};
+                    // Call next frame
+                    requestAnimationFrame(detectFrame);
+                }).catch(function (e) {
+                    console.log("CAUGHT", e);
+                    requestAnimationFrame(detectFrame);
+                });
+            };
         });
 
     </script>
