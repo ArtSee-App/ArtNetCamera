@@ -494,6 +494,7 @@
         // Text with transparent background, positioned inside and centered at the top of the rectangle
         ctx.textBaseline = "top";
         ctx.fillStyle = "white"; // Choose a color that contrasts with your canvas
+        ctx.fillText("FPS: " + fps.toFixed(2), 10, 20);
         const textX = (x - textWidth / 2) / scale; // Center text inside the rectangle
         const textY = (y - height / 2) / scale + 4; // Adjust Y position to be at the top inside the rectangle
         ctx.fillText(customText, textX, textY); // Draw text inside the rectangle
