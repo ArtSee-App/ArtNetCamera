@@ -3,6 +3,7 @@
 
 <head>
     <title>ArtNetCamera</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <meta name="viewport" content="width=640, user-scalable=no" />
 
@@ -105,7 +106,7 @@
             /* Full black background */
             color: white;
             font-size: 2em;
-            z-index: 3;
+            z-index: 4;
 
 
         }
@@ -167,9 +168,53 @@
             align-items: center;
             flex-direction: column;
         }
+
+        #zoomControls {
+    position: fixed;
+    top: 50%; /* Middle of the screen */
+    right: 0px; /* Right side */
+    transform: translateY(-50%); /* Adjust for the middle alignment */
+    z-index: 2; /* Keeps it above other elements */
+    text-align: center; /* Center-align the container */
+
+}
+.zoom-button {
+    display: block;
+    width: 100px; /* Set a specific width for buttons */
+    margin: 10px auto; /* Auto margins for horizontal centering */
+    font-size: 25px;
+    padding: 15px;
+    border: none;
+    background-color: transparent;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+    text-align: center;
+    user-select: none;
+    outline: none; /* Remove focus outline */
+    -webkit-tap-highlight-color: transparent; /* Disable tap highlight on iOS */
+    -webkit-user-select: none; /* Disable text selection */
+    user-select: none; /* Standard syntax */
+
+}
+
+/* Override styles for active state to prevent background change */
+.zoom-button:hover, .zoom-button:active, .zoom-button:focus {
+    background-color: transparent; /* Keeps background transparent */
+    outline: none; /* Removes focus outline */
+    box-shadow: none; /* Removes any shadow */
+    -webkit-user-select: none; /* Disable text selection */
+    user-select: none; /* Standard syntax */
+}
+
+.zoom-button.selected {
+    color: #3f3f3f;
+}
+
     </style>
     <script>
         /*jshint esversion:6*/
+        let videoTrack = null;
 
         $(function () {
             const video = $("video")[0];
@@ -190,6 +235,7 @@
                     }
                 })
                 .then(function (stream) {
+                    videoTrack = stream.getVideoTracks()[0];
                     return new Promise(function (resolve) {
                         video.srcObject = stream;
                         video.onloadeddata = function () {
@@ -225,6 +271,24 @@
                     loadingMessage.style.display = 'none';
                 }
 
+                $('.zoom-button').on('click', function() {
+        // Remove 'selected' class from all buttons
+        $('.zoom-button').removeClass('selected');
+        // Add 'selected' class to clicked button
+        $(this).addClass('selected');
+
+        // Apply zoom based on button's ID
+        if(this.id === 'zoomOut') {
+            applyZoom(1); // 0x zoom
+        } else if(this.id === 'zoomIn') {
+            applyZoom(1.5); // 1.5x zoom
+        } else if(this.id === 'zoomMid') {
+            applyZoom(2); // 2x zoom
+        }
+    });
+
+
+
             });
 
             var canvas, ctx;
@@ -247,10 +311,44 @@
                 }
             }
 
-            function sendImageToReactNative(imageData) {
-                if (window.ReactNativeWebView) {
-                    window.ReactNativeWebView.postMessage(imageData);
-                }
+            async  function sendImageToReactNative(imageData) {
+                var overlay = document.getElementById('overlay');
+    var fetchingDataMessage = document.getElementById('fetchingDataMessage');
+
+    overlay.style.display = 'block'; // Show the overlay
+    fetchingDataMessage.style.visibility = 'visible'; // Show the fetching message
+
+    try {
+        // Convert the base64 image data to a blob
+        const fetchResponse = await fetch(imageData);
+        const blob = await fetchResponse.blob();
+
+        // Create a Blob URL for the blob
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Create a temporary link element
+        var tempLink = document.createElement('a');
+        tempLink.style.display = 'none';
+        tempLink.href = blobUrl;
+        tempLink.download = 'image.png'; // Name of the file to be downloaded
+        document.body.appendChild(tempLink);
+
+        // Automatically start the download
+        tempLink.click();
+
+        // Clean up by revoking the Blob URL and removing the temporary link
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(tempLink);
+
+        // Hide the overlay and fetching message
+        overlay.style.display = 'none';
+        fetchingDataMessage.style.visibility = 'hidden';
+
+    } catch (error) {
+        console.error('Error:', error);
+        overlay.style.display = 'none';
+        fetchingDataMessage.style.visibility = 'hidden';
+    }
             }
 
             async function sendImageToFastAPIServer(imageData, startTime) {
@@ -274,7 +372,7 @@
                 // Send the request to the FastAPI server
                 try {
                     let startTime2 = performance.now(); // Start the timer
-                    let response = await fetch('https://328c-5-12-245-174.ngrok-free.app/upload-image/', {
+                    let response = await fetch('https://e690-86-121-167-65.ngrok-free.app/upload-image/', {
                         method: 'POST',
                         body: formData // FormData will be sent as 'multipart/form-data'
                         // Don't set 'Content-Type': 'multipart/form-data' here, fetch does it automatically, including the boundary parameter
@@ -530,6 +628,31 @@
             };
         });
 
+        async function applyZoom(zoomLevel) {
+        if (!videoTrack) {
+            console.error('Video track is not available');
+            return;
+        }
+
+        try {
+            const capabilities = videoTrack.getCapabilities();
+
+            // Check if zoom is supported
+            if (!capabilities.zoom) {
+                console.log('Zoom is not supported by this device');
+                return;
+            }
+
+            // Apply the zoom constraint
+            await videoTrack.applyConstraints({
+                advanced: [{ zoom: zoomLevel }]
+            });
+        } catch (error) {
+            console.error('Error applying zoom:', error);
+        }
+    }
+
+
     </script>
 </head>
 
@@ -547,6 +670,12 @@
             Fetching data...
         </div>
         <div id="overlay"></div>
+        <div id="zoomControls">
+            <button id="zoomOut" class="zoom-button selected">0x</button> <!-- Add 'selected' class here -->
+            <button id="zoomIn" class="zoom-button">1.5x</button>
+            <button id="zoomMid" class="zoom-button">2x</button>
+        </div>
+                                
 
     </body>
 
