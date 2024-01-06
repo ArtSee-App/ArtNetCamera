@@ -372,7 +372,7 @@
                 // Send the request to the FastAPI server
                 try {
                     let startTime2 = performance.now(); // Start the timer
-                    let response = await fetch('https://e690-86-121-167-65.ngrok-free.app/upload-image/', {
+                    let response = await fetch('https://api.artvista.app/upload-image/', {
                         method: 'POST',
                         body: formData // FormData will be sent as 'multipart/form-data'
                         // Don't set 'Content-Type': 'multipart/form-data' here, fetch does it automatically, including the boundary parameter
@@ -560,7 +560,7 @@
 
                     // Gradient stroke for rectangle
                     const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-                    gradient.addColorStop(0, "white");
+                    gradient.addColorStop(0, "#ffffff");
                     gradient.addColorStop(0, "black");
 
                     // Rounded rectangle with shadow for detection box
