@@ -560,7 +560,7 @@
 
                     // Gradient stroke for rectangle
                     const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-                    gradient.addColorStop(0, "#ffffff");
+                    gradient.addColorStop(0, "red");
                     gradient.addColorStop(0, "black");
 
                     // Rounded rectangle with shadow for detection box
@@ -670,11 +670,13 @@
             Fetching data...
         </div>
         <div id="overlay"></div>
-        <div id="zoomControls">
-            <button id="zoomOut" class="zoom-button selected">0x</button> <!-- Add 'selected' class here -->
-            <button id="zoomIn" class="zoom-button">1.5x</button>
-            <button id="zoomMid" class="zoom-button">2x</button>
-        </div>
+<!-- 
+<div id="zoomControls">
+    <button id="zoomOut" class="zoom-button selected">0x</button> 
+    <button id="zoomIn" class="zoom-button">1.5x</button>
+    <button id="zoomMid" class="zoom-button">2x</button>
+</div>
+-->
                                 
 
     </body>
