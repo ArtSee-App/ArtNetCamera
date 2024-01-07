@@ -170,47 +170,65 @@
         }
 
         #zoomControls {
-    position: fixed;
-    top: 50%; /* Middle of the screen */
-    right: 0px; /* Right side */
-    transform: translateY(-50%); /* Adjust for the middle alignment */
-    z-index: 2; /* Keeps it above other elements */
-    text-align: center; /* Center-align the container */
+            position: fixed;
+            top: 50%;
+            /* Middle of the screen */
+            right: 0px;
+            /* Right side */
+            transform: translateY(-50%);
+            /* Adjust for the middle alignment */
+            z-index: 2;
+            /* Keeps it above other elements */
+            text-align: center;
+            /* Center-align the container */
 
-}
-.zoom-button {
-    display: block;
-    width: 100px; /* Set a specific width for buttons */
-    margin: 10px auto; /* Auto margins for horizontal centering */
-    font-size: 25px;
-    padding: 15px;
-    border: none;
-    background-color: transparent;
-    color: white;
-    cursor: pointer;
-    border-radius: 5px;
-    text-align: center;
-    user-select: none;
-    outline: none; /* Remove focus outline */
-    -webkit-tap-highlight-color: transparent; /* Disable tap highlight on iOS */
-    -webkit-user-select: none; /* Disable text selection */
-    user-select: none; /* Standard syntax */
+        }
 
-}
+        .zoom-button {
+            display: block;
+            width: 100px;
+            /* Set a specific width for buttons */
+            margin: 10px auto;
+            /* Auto margins for horizontal centering */
+            font-size: 25px;
+            padding: 15px;
+            border: none;
+            background-color: transparent;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            text-align: center;
+            user-select: none;
+            outline: none;
+            /* Remove focus outline */
+            -webkit-tap-highlight-color: transparent;
+            /* Disable tap highlight on iOS */
+            -webkit-user-select: none;
+            /* Disable text selection */
+            user-select: none;
+            /* Standard syntax */
 
-/* Override styles for active state to prevent background change */
-.zoom-button:hover, .zoom-button:active, .zoom-button:focus {
-    background-color: transparent; /* Keeps background transparent */
-    outline: none; /* Removes focus outline */
-    box-shadow: none; /* Removes any shadow */
-    -webkit-user-select: none; /* Disable text selection */
-    user-select: none; /* Standard syntax */
-}
+        }
 
-.zoom-button.selected {
-    color: #3f3f3f;
-}
+        /* Override styles for active state to prevent background change */
+        .zoom-button:hover,
+        .zoom-button:active,
+        .zoom-button:focus {
+            background-color: transparent;
+            /* Keeps background transparent */
+            outline: none;
+            /* Removes focus outline */
+            box-shadow: none;
+            /* Removes any shadow */
+            -webkit-user-select: none;
+            /* Disable text selection */
+            user-select: none;
+            /* Standard syntax */
+        }
 
+        .zoom-button.selected {
+            color: #3f3f3f;
+        }
     </style>
     <script>
         /*jshint esversion:6*/
@@ -271,22 +289,21 @@
                     loadingMessage.style.display = 'none';
                 }
 
-                $('.zoom-button').on('click', function() {
-        // Remove 'selected' class from all buttons
-        $('.zoom-button').removeClass('selected');
-        // Add 'selected' class to clicked button
-        $(this).addClass('selected');
+                $('.zoom-button').on('click', function () {
+                    // Remove 'selected' class from all buttons
+                    $('.zoom-button').removeClass('selected');
+                    // Add 'selected' class to clicked button
+                    $(this).addClass('selected');
 
-        // Apply zoom based on button's ID
-        if(this.id === 'zoomOut') {
-            applyZoom(1); // 0x zoom
-        } else if(this.id === 'zoomIn') {
-            applyZoom(1.5); // 1.5x zoom
-        } else if(this.id === 'zoomMid') {
-            applyZoom(2); // 2x zoom
-        }
-    });
-
+                    // Apply zoom based on button's ID
+                    if (this.id === 'zoomOut') {
+                        applyZoom(1); // 0x zoom
+                    } else if (this.id === 'zoomIn') {
+                        applyZoom(1.5); // 1.5x zoom
+                    } else if (this.id === 'zoomMid') {
+                        applyZoom(2); // 2x zoom
+                    }
+                });
 
 
             });
@@ -311,44 +328,44 @@
                 }
             }
 
-            async  function sendImageToReactNative(imageData) {
+            async function sendImageToReactNative(imageData) {
                 var overlay = document.getElementById('overlay');
-    var fetchingDataMessage = document.getElementById('fetchingDataMessage');
+                var fetchingDataMessage = document.getElementById('fetchingDataMessage');
 
-    overlay.style.display = 'block'; // Show the overlay
-    fetchingDataMessage.style.visibility = 'visible'; // Show the fetching message
+                overlay.style.display = 'block'; // Show the overlay
+                fetchingDataMessage.style.visibility = 'visible'; // Show the fetching message
 
-    try {
-        // Convert the base64 image data to a blob
-        const fetchResponse = await fetch(imageData);
-        const blob = await fetchResponse.blob();
+                try {
+                    // Convert the base64 image data to a blob
+                    const fetchResponse = await fetch(imageData);
+                    const blob = await fetchResponse.blob();
 
-        // Create a Blob URL for the blob
-        const blobUrl = URL.createObjectURL(blob);
+                    // Create a Blob URL for the blob
+                    const blobUrl = URL.createObjectURL(blob);
 
-        // Create a temporary link element
-        var tempLink = document.createElement('a');
-        tempLink.style.display = 'none';
-        tempLink.href = blobUrl;
-        tempLink.download = 'image.png'; // Name of the file to be downloaded
-        document.body.appendChild(tempLink);
+                    // Create a temporary link element
+                    var tempLink = document.createElement('a');
+                    tempLink.style.display = 'none';
+                    tempLink.href = blobUrl;
+                    tempLink.download = 'image.png'; // Name of the file to be downloaded
+                    document.body.appendChild(tempLink);
 
-        // Automatically start the download
-        tempLink.click();
+                    // Automatically start the download
+                    tempLink.click();
 
-        // Clean up by revoking the Blob URL and removing the temporary link
-        window.URL.revokeObjectURL(blobUrl);
-        document.body.removeChild(tempLink);
+                    // Clean up by revoking the Blob URL and removing the temporary link
+                    window.URL.revokeObjectURL(blobUrl);
+                    document.body.removeChild(tempLink);
 
-        // Hide the overlay and fetching message
-        overlay.style.display = 'none';
-        fetchingDataMessage.style.visibility = 'hidden';
+                    // Hide the overlay and fetching message
+                    overlay.style.display = 'none';
+                    fetchingDataMessage.style.visibility = 'hidden';
 
-    } catch (error) {
-        console.error('Error:', error);
-        overlay.style.display = 'none';
-        fetchingDataMessage.style.visibility = 'hidden';
-    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    overlay.style.display = 'none';
+                    fetchingDataMessage.style.visibility = 'hidden';
+                }
             }
 
             async function sendImageToFastAPIServer(imageData, startTime) {
@@ -561,7 +578,7 @@
                     // Gradient stroke for rectangle
                     const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
                     gradient.addColorStop(0, "white");
-                    gradient.addColorStop(0, "black");
+                    gradient.addColorStop(0.1, "black");
 
                     // Rounded rectangle with shadow for detection box
                     ctx.save();
@@ -626,32 +643,72 @@
                     requestAnimationFrame(detectFrame);
                 });
             };
+
+
+            document.getElementById('exposureDefault').addEventListener('click', function() {
+    applyExposure('default'); // Set to default exposure
+});
+
+document.getElementById('exposureMax').addEventListener('click', function() {
+    applyExposure('max'); // Set to maximum exposure
+});
+
+    
         });
 
         async function applyZoom(zoomLevel) {
-        if (!videoTrack) {
-            console.error('Video track is not available');
-            return;
-        }
-
-        try {
-            const capabilities = videoTrack.getCapabilities();
-
-            // Check if zoom is supported
-            if (!capabilities.zoom) {
-                console.log('Zoom is not supported by this device');
+            if (!videoTrack) {
+                console.error('Video track is not available');
                 return;
             }
 
-            // Apply the zoom constraint
-            await videoTrack.applyConstraints({
-                advanced: [{ zoom: zoomLevel }]
-            });
-        } catch (error) {
-            console.error('Error applying zoom:', error);
+            try {
+                const capabilities = videoTrack.getCapabilities();
+
+                // Check if zoom is supported
+                if (!capabilities.zoom) {
+                    console.log('Zoom is not supported by this device');
+                    return;
+                }
+
+                // Apply the zoom constraint
+                await videoTrack.applyConstraints({
+                    advanced: [{ zoom: zoomLevel }]
+                });
+            } catch (error) {
+                console.error('Error applying zoom:', error);
+            }
         }
+
+        async function applyExposure(action) {
+    if (!videoTrack) {
+        console.error('Video track is not available');
+        return;
     }
 
+    try {
+        const capabilities = videoTrack.getCapabilities();
+        if (!capabilities.exposureCompensation) {
+            console.log('Exposure compensation is not supported by this device');
+            return;
+        }
+
+        let newExposureCompensation;
+        if (action === 'default') {
+            newExposureCompensation = 0; // Default value
+        } else if (action === 'max') {
+            newExposureCompensation = capabilities.exposureCompensation.max; // Max value
+        }
+
+        console.log('Setting Exposure Compensation to:', newExposureCompensation);
+        await videoTrack.applyConstraints({
+            advanced: [{ exposureCompensation: newExposureCompensation }]
+        });
+
+    } catch (error) {
+        console.error('Error applying exposure compensation:', error);
+    }
+}
 
     </script>
 </head>
@@ -670,14 +727,18 @@
             Fetching data...
         </div>
         <div id="overlay"></div>
-<!-- 
+        <!-- 
 <div id="zoomControls">
     <button id="zoomOut" class="zoom-button selected">0x</button> 
     <button id="zoomIn" class="zoom-button">1.5x</button>
     <button id="zoomMid" class="zoom-button">2x</button>
 </div>
 -->
-                                
+
+<div id="exposureControls" style="position: fixed; top: 50%; right: 0px; transform: translateY(-50%); z-index: 2; text-align: center;">
+    <button id="exposureDefault" class="zoom-button">Default</button>
+    <button id="exposureMax" class="zoom-button">Max</button>
+</div>
 
     </body>
 
