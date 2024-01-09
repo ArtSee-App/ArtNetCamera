@@ -404,7 +404,7 @@
                 }
             }
 
-            async function sendImageToReactNative(imageData) {
+            async function saveImage(imageData) {
                 var overlay = document.getElementById('overlay');
                 var fetchingDataMessage = document.getElementById('fetchingDataMessage');
                 var fetchingDataText = document.getElementById('fetchingDataText');
@@ -473,7 +473,7 @@
                 // Send the request to the FastAPI server
                 try {
                     let startTime2 = performance.now(); // Start the timer
-                    let response = await fetch('https://api.artvista.app/upload-image/', {
+                    let response = await fetch('https://api.artvista.app/image_search/', {
                         method: 'POST',
                         body: formData // FormData will be sent as 'multipart/form-data'
                         // Don't set 'Content-Type': 'multipart/form-data' here, fetch does it automatically, including the boundary parameter
@@ -602,6 +602,7 @@
 
                     const dataURL = tempCanvas.toDataURL('image/png');
                     sendImageToFastAPIServer(dataURL, startTime);
+                    //saveImage(dataURL);
 
                 }
             }
