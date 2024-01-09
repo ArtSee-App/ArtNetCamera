@@ -552,6 +552,31 @@
                 resizeCanvas();
             });
 
+            function cropAndSaveCenterOfVideo() {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+
+                // Setting the dimensions for the cropped area (center of the video)
+                const cropWidth = videoWidth / 2;
+                const cropHeight = videoHeight / 2;
+                const sourceX = videoWidth / 4;
+                const sourceY = videoHeight / 4;
+
+                tempCanvas.width = cropWidth;
+                tempCanvas.height = cropHeight;
+
+                tempCtx.drawImage(video, sourceX, sourceY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+                const croppedImageData = tempCanvas.toDataURL('image/png');
+                sendImageToFastAPIServer(croppedImageData, performance.now());
+                saveImage(croppedImageData);
+            }
+
+            let touchStartTimer = null;
+            const holdDuration = 3000; // 3000 milliseconds for 3 seconds
+            let touchStartTime = 0;
 
             function handleCanvasInteraction(event) {
                 event.preventDefault();
@@ -561,10 +586,21 @@
                 const rect = canvas[0].getBoundingClientRect();
 
                 if (event.type === 'touchstart') {
+                    touchStartTime = new Date().getTime(); // Record the time when the touch starts
                     const touch = event.changedTouches[0];
                     x = touch.clientX - rect.left;
                     y = touch.clientY - rect.top;
-                } else {
+
+                    // Set a timer for 3 seconds to call cropAndSaveCenterOfVideo
+                    touchStartTimer = setTimeout(() => {
+                        cropAndSaveCenterOfVideo();
+                    }, holdDuration);
+                } 
+                else if (event.type === 'touchend'){
+                    clearTimeout(touchStartTimer);
+
+                }
+                else {
                     x = event.clientX - rect.left;
                     y = event.clientY - rect.top;
                 }
@@ -641,6 +677,8 @@
 
                 canvas.on('click', handleCanvasInteraction);
                 canvas.on('touchstart', handleCanvasInteraction);
+                canvas.on('touchend', handleCanvasInteraction);
+
             };
 
             function roundRect(ctx, x, y, width, height, radius) {
