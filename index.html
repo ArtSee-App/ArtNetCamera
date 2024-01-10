@@ -579,47 +579,73 @@
 
 
             function showBlackScreenOverlay(overlay) {
-                if (!overlay) return; // Ensure overlay is present
+    if (!overlay) return; // Ensure overlay is present
 
-                // Make the overlay visible
-                overlay.style.visibility = 'visible';
-                floatingMessage.style.visibility = 'hidden';
+    // Remove any existing canvas from the overlay
+    while (overlay.firstChild) {
+        overlay.removeChild(overlay.firstChild);
+    }
 
-                // Create and append a canvas element
-                const canvas = document.createElement('canvas');
-                const videoWidth = video.videoWidth;
-                const videoHeight = video.videoHeight;
-                canvas.width = videoWidth;
-                canvas.height = videoHeight;
-                overlay.appendChild(canvas);
+    // Make the overlay visible
+    overlay.style.visibility = 'visible';
+    floatingMessage.style.visibility = 'hidden';
 
-                // Check for valid dimensions
-                if (canvas.width === 0 || canvas.height === 0) {
-                    console.error("Invalid overlay dimensions");
-                    return;
-                }
+    // Create and append a new canvas element
+    const canvas = document.createElement('canvas');
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+    overlay.appendChild(canvas);
 
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    console.error("Failed to get canvas context");
-                    return;
-                }
+    // Ensure valid dimensions
+    if (canvas.width === 0 || canvas.height === 0) {
+        console.error("Invalid overlay dimensions");
+        return;
+    }
 
-                // Setting the dimensions for the cropped area (center of the video)
-                const cropWidth = videoWidth / 2;
-                const cropHeight = videoHeight / 4;
-                const sourceX = videoWidth / 4;
-                const sourceY = videoHeight / 3;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error("Failed to get canvas context");
+        return;
+    }
 
-                // Styling the rectangle
-                ctx.strokeStyle = 'white'; // Use a clearly visible color
-                ctx.lineWidth = 5;
-                ctx.setLineDash([40, 50]); // Create a less frequent dashed line
-                ctx.lineJoin = 'round'; // Use rounded corners
+    // Countdown logic
+    let countdown = 3;
+    const drawCountdown = () => {
+        if (countdown > 0) {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Drawing the rectangle
-                ctx.strokeRect(sourceX, sourceY, cropWidth, cropHeight);
-            }
+            // Draw the rectangle for the cropped area
+            const cropWidth = videoWidth / 2;
+            const cropHeight = videoHeight / 4;
+            const sourceX = videoWidth / 4;
+            const sourceY = videoHeight / 3;
+
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 5;
+            ctx.setLineDash([40, 50]);
+            ctx.lineJoin = 'round';
+            ctx.strokeRect(sourceX, sourceY, cropWidth, cropHeight);
+
+            // Draw the countdown number
+            ctx.font = '300px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(countdown, canvas.width / 2, canvas.height /1.2);
+            ctx.font = '50px Arial';
+
+            ctx.fillText("Keep holding", canvas.width / 2, canvas.height / 4);
+
+            countdown--;
+            setTimeout(drawCountdown, 1000);
+        }
+    };
+
+    drawCountdown();
+}
 
 
 
@@ -652,7 +678,7 @@
                         overlay.style.visibility = 'hidden';
                         floatingMessage.style.visibility = 'visible';
                         shouldRenderPredictions = true; // Re-enable rendering predictions
-                    }, 3000);
+                    }, 4000);
 
                     touchStartTimer_blackscreen = setTimeout(() => {
                         if (ctx) {
