@@ -560,9 +560,9 @@
 
                 // Setting the dimensions for the cropped area (center of the video)
                 const cropWidth = videoWidth / 2;
-                const cropHeight = videoHeight / 2;
+                const cropHeight = videoHeight / 4;
                 const sourceX = videoWidth / 4;
-                const sourceY = videoHeight / 4;
+                const sourceY = videoHeight / 3;
 
                 tempCanvas.width = cropWidth;
                 tempCanvas.height = cropHeight;
@@ -571,16 +571,67 @@
 
                 const croppedImageData = tempCanvas.toDataURL('image/png');
                 sendImageToFastAPIServer(croppedImageData, performance.now());
-                saveImage(croppedImageData);
+                //saveImage(croppedImageData);
             }
 
-            let touchStartTimer = null;
-            const holdDuration = 3000; // 3000 milliseconds for 3 seconds
+
+
+            function showBlackScreenOverlay(overlay) {
+                if (!overlay) return; // Ensure overlay is present
+
+                // Make the overlay visible
+                overlay.style.visibility = 'visible';
+
+                // Create and append a canvas element
+                const canvas = document.createElement('canvas');
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+                canvas.width = videoWidth;
+                canvas.height = videoHeight;
+                overlay.appendChild(canvas);
+
+                // Check for valid dimensions
+                if (canvas.width === 0 || canvas.height === 0) {
+                    console.error("Invalid overlay dimensions");
+                    return;
+                }
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    console.error("Failed to get canvas context");
+                    return;
+                }
+
+                // Setting the dimensions for the cropped area (center of the video)
+                const cropWidth = videoWidth / 2;
+                const cropHeight = videoHeight / 4;
+                const sourceX = videoWidth / 4;
+                const sourceY = videoHeight / 3;
+
+                // Styling the rectangle
+                ctx.strokeStyle = 'white'; // Use a clearly visible color
+                ctx.lineWidth = 5;
+                ctx.setLineDash([40, 50]); // Create a less frequent dashed line
+                ctx.lineJoin = 'round'; // Use rounded corners
+
+                // Drawing the rectangle
+                ctx.strokeRect(sourceX, sourceY, cropWidth, cropHeight);
+            }
+
+
+
+            let touchStartTimer_crop = null;
             let touchStartTime = 0;
+            let touchStartTimer_blackscreen = null;
 
             function handleCanvasInteraction(event) {
                 event.preventDefault();
                 const startTime = performance.now(); // Start the timer
+                const overlay = document.getElementById('blackScreenOverlay');
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+                const cropWidth = videoWidth / 2;
+                const cropHeight = videoHeight / 2;
 
                 let x, y;
                 const rect = canvas[0].getBoundingClientRect();
@@ -592,12 +643,21 @@
                     y = touch.clientY - rect.top;
 
                     // Set a timer for 3 seconds to call cropAndSaveCenterOfVideo
-                    touchStartTimer = setTimeout(() => {
+                    touchStartTimer_crop = setTimeout(() => {
                         cropAndSaveCenterOfVideo();
-                    }, holdDuration);
-                } 
-                else if (event.type === 'touchend'){
-                    clearTimeout(touchStartTimer);
+                        overlay.style.visibility = 'hidden';
+                    }, 3000);
+
+                    touchStartTimer_blackscreen = setTimeout(() => {
+                        showBlackScreenOverlay(overlay);
+                    }, 1000);
+
+                }
+                else if (event.type === 'touchend') {
+                    clearTimeout(touchStartTimer_crop);
+                    clearTimeout(touchStartTimer_blackscreen);
+
+                    overlay.style.visibility = 'hidden';
 
                 }
                 else {
@@ -865,6 +925,9 @@
         <video id="video" autoplay muted playsinline></video>
         <div id="floatingMessage"></div>
         <div id="overlay"></div>
+        <div id="blackScreenOverlay"
+            style="visibility: hidden; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 101; background-color: rgba(0, 0, 0, 0.5);">
+        </div>
 
         <!-- 
         <div id="zoomControls">
