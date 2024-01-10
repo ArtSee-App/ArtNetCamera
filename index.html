@@ -157,6 +157,15 @@
 
         }
 
+        #blackScreenOverlay {
+            visibility: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 101;
+        }
 
 
         #overlay {
@@ -579,73 +588,124 @@
 
 
             function showBlackScreenOverlay(overlay) {
-    if (!overlay) return; // Ensure overlay is present
+                if (!overlay) return; // Ensure overlay is present
 
-    // Remove any existing canvas from the overlay
-    while (overlay.firstChild) {
-        overlay.removeChild(overlay.firstChild);
-    }
+                // Remove any existing canvas from the overlay
+                while (overlay.firstChild) {
+                    overlay.removeChild(overlay.firstChild);
+                }
 
-    // Make the overlay visible
-    overlay.style.visibility = 'visible';
-    floatingMessage.style.visibility = 'hidden';
+                // Make the overlay visible
+                overlay.style.visibility = 'visible';
+                floatingMessage.style.visibility = 'hidden';
 
-    // Create and append a new canvas element
-    const canvas = document.createElement('canvas');
-    const videoWidth = video.videoWidth;
-    const videoHeight = video.videoHeight;
-    canvas.width = videoWidth;
-    canvas.height = videoHeight;
-    overlay.appendChild(canvas);
+                // Create and append a new canvas element
+                const canvas = document.createElement('canvas');
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+                canvas.width = videoWidth;
+                canvas.height = videoHeight;
+                overlay.appendChild(canvas);
 
-    // Ensure valid dimensions
-    if (canvas.width === 0 || canvas.height === 0) {
-        console.error("Invalid overlay dimensions");
-        return;
-    }
+                // Ensure valid dimensions
+                if (canvas.width === 0 || canvas.height === 0) {
+                    console.error("Invalid overlay dimensions");
+                    return;
+                }
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-        console.error("Failed to get canvas context");
-        return;
-    }
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    console.error("Failed to get canvas context");
+                    return;
+                }
 
-    // Countdown logic
-    let countdown = 3;
-    const drawCountdown = () => {
-        if (countdown > 0) {
-            // Clear the canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Function to apply blur effect
+                const applyBlurEffect = () => {
 
-            // Draw the rectangle for the cropped area
-            const cropWidth = videoWidth / 2;
-            const cropHeight = videoHeight / 4;
-            const sourceX = videoWidth / 4;
-            const sourceY = videoHeight / 3;
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; // Semi-transparent white
+                    ctx.fillRect(0, 0, canvas.width, canvas.height); // Cover entire canvas
+                };
 
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 5;
-            ctx.setLineDash([40, 50]);
-            ctx.lineJoin = 'round';
-            ctx.strokeRect(sourceX, sourceY, cropWidth, cropHeight);
+                const drawRoundedCorners = (x, y, width, height, radius) => {
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 5;
 
-            // Draw the countdown number
-            ctx.font = '300px Arial';
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(countdown, canvas.width / 2, canvas.height /1.2);
-            ctx.font = '50px Arial';
+                    // Increase the radius for bigger corners
+                    // For example, let's double the size of the radius
 
-            ctx.fillText("Keep holding", canvas.width / 2, canvas.height / 4);
+                    // Top left corner
+                    ctx.beginPath();
+                    ctx.arc(x + radius, y + radius, radius, Math.PI, 1.5 * Math.PI);
+                    ctx.stroke();
 
-            countdown--;
-            setTimeout(drawCountdown, 1000);
-        }
-    };
+                    // Top right corner
+                    ctx.beginPath();
+                    ctx.arc(x + width - radius, y + radius, radius, 1.5 * Math.PI, 2 * Math.PI);
+                    ctx.stroke();
 
-    drawCountdown();
-}
+                    // Bottom right corner
+                    ctx.beginPath();
+                    ctx.arc(x + width - radius, y + height - radius, radius, 0, 0.5 * Math.PI);
+                    ctx.stroke();
+
+                    // Bottom left corner
+                    ctx.beginPath();
+                    ctx.arc(x + radius, y + height - radius, radius, 0.5 * Math.PI, Math.PI);
+                    ctx.stroke();
+                };
+
+
+                // Countdown logic
+                let countdown = 3;
+                const drawCountdown = () => {
+                    if (countdown > 0) {
+                        // Apply blur effect
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                        applyBlurEffect();
+
+                        // Draw the rectangle for the cropped area without blur
+                        const cornerRadius = 80; // Same as the radius used in drawRoundedCorners
+                        const cropWidth = videoWidth / 2;
+                        const cropHeight = videoHeight / 4;
+                        const sourceX = videoWidth / 4;
+                        const sourceY = videoHeight / 3;
+
+                        ctx.globalCompositeOperation = 'destination-out';
+                        ctx.beginPath();
+                        ctx.moveTo(sourceX + cornerRadius, sourceY);
+                        ctx.lineTo(sourceX + cropWidth - cornerRadius, sourceY);
+                        ctx.arc(sourceX + cropWidth - cornerRadius, sourceY + cornerRadius, cornerRadius, 1.5 * Math.PI, 2 * Math.PI);
+                        ctx.lineTo(sourceX + cropWidth, sourceY + cropHeight - cornerRadius);
+                        ctx.arc(sourceX + cropWidth - cornerRadius, sourceY + cropHeight - cornerRadius, cornerRadius, 0, 0.5 * Math.PI);
+                        ctx.lineTo(sourceX + cornerRadius, sourceY + cropHeight);
+                        ctx.arc(sourceX + cornerRadius, sourceY + cropHeight - cornerRadius, cornerRadius, 0.5 * Math.PI, Math.PI);
+                        ctx.lineTo(sourceX, sourceY + cornerRadius);
+                        ctx.arc(sourceX + cornerRadius, sourceY + cornerRadius, cornerRadius, Math.PI, 1.5 * Math.PI);
+                        ctx.fill();
+
+
+                        // Reset to default composite operation
+                        ctx.globalCompositeOperation = 'source-over';
+
+                        // Optionally, redraw the border of the rectangle with rounded corners
+                        drawRoundedCorners(sourceX, sourceY, cropWidth, cropHeight, cornerRadius);
+                        // Draw the countdown number
+                        ctx.font = '300px Arial';
+                        ctx.fillStyle = 'white';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(countdown, canvas.width / 2, canvas.height / 1.2);
+                        ctx.font = '50px Arial';
+                        ctx.fillText("Keep holding", canvas.width / 2, canvas.height / 4);
+
+                        countdown--;
+                        setTimeout(drawCountdown, 1000);
+                    }
+                };
+
+                drawCountdown();
+            }
 
 
 
@@ -966,9 +1026,7 @@
         <video id="video" autoplay muted playsinline></video>
         <div id="floatingMessage"></div>
         <div id="overlay"></div>
-        <div id="blackScreenOverlay"
-            style="visibility: hidden; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 101; background-color: rgba(0, 0, 0, 0.5);">
-        </div>
+        <div id="blackScreenOverlay"></div>
 
         <!-- 
         <div id="zoomControls">
