@@ -64,6 +64,7 @@
         }
 
         #floatingMessage {
+            visibility: visible;
             position: fixed;
             top: 10px;
             left: 50%;
@@ -307,6 +308,7 @@
         /*jshint esversion:6*/
         let videoTrack = null;
         var isProcessing = false; // Global flag to control interaction
+        let shouldRenderPredictions = true;
 
         $(function () {
             const video = $("video")[0];
@@ -581,6 +583,7 @@
 
                 // Make the overlay visible
                 overlay.style.visibility = 'visible';
+                floatingMessage.style.visibility = 'hidden';
 
                 // Create and append a canvas element
                 const canvas = document.createElement('canvas');
@@ -644,11 +647,19 @@
 
                     // Set a timer for 3 seconds to call cropAndSaveCenterOfVideo
                     touchStartTimer_crop = setTimeout(() => {
+
                         cropAndSaveCenterOfVideo();
                         overlay.style.visibility = 'hidden';
+                        floatingMessage.style.visibility = 'visible';
+                        shouldRenderPredictions = true; // Re-enable rendering predictions
                     }, 3000);
 
                     touchStartTimer_blackscreen = setTimeout(() => {
+                        if (ctx) {
+                            ctx.clearRect(0, 0, canvas[0].width, canvas[0].height);
+                        }
+
+                        shouldRenderPredictions = false; // Disable rendering predictions
                         showBlackScreenOverlay(overlay);
                     }, 1000);
 
@@ -656,8 +667,10 @@
                 else if (event.type === 'touchend') {
                     clearTimeout(touchStartTimer_crop);
                     clearTimeout(touchStartTimer_blackscreen);
+                    shouldRenderPredictions = true; // Re-enable rendering predictions
 
                     overlay.style.visibility = 'hidden';
+                    floatingMessage.style.visibility = 'visible';
 
                 }
                 else {
@@ -820,7 +833,9 @@
                 model.configure({ threshold: 0.8 });
                 model.detect(video).then(function (preds) {
                     predictions = preds;
-                    renderPredictions(predictions);
+                    if (shouldRenderPredictions) {
+                        renderPredictions(predictions);
+                    }
 
                     // Calculate FPS
                     var now = Date.now();
