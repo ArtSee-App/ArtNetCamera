@@ -517,7 +517,8 @@
                         if (json.imaginary_confidence >= 2) {
                             var paintingName = json.result[1];
                             var author = json.result[2];
-                            var displayMessage = "Painting: " + paintingName + "<br>Author: " + author;
+                            var conf = json.imaginary_confidence;
+                            var displayMessage = "Painting: " + paintingName + "<br>Author: " + author + "<br>Imaginary confidence: " + conf;
 
                             var infoDisplay = document.getElementById('infoDisplay');
                             infoDisplay.innerHTML = displayMessage;
@@ -532,6 +533,7 @@
                             }
                         }
                         else {
+                            var infoDisplay = document.getElementById('infoDisplay');
                             infoDisplay.innerHTML = 'We are not sure about this painting, try again.';
 
                             // Clear the text after 3 seconds (3000 milliseconds)
