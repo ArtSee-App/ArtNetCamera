@@ -499,10 +499,16 @@
                         console.log(`Time taken to receive the json: ${endTime2 - startTime2} ms`); // Log the time taken
 
                         if (json.imaginary_confidence >= 2) {
+                            var paintingName = json.result[1];
+                            var author = json.result[2];
+                            var alertMessage = "Painting: " + paintingName + "\nAuthor: " + author;
+                            alert(alertMessage);
+
                             if (window.ReactNativeWebView) {
                                 window.ReactNativeWebView.postMessage(JSON.stringify(json));
                             }
-                        } else {
+                        }
+                        else {
                             alert("We are not sure about this painting, try again."); // Show an alert if confidence is less than 2
                         }
                         await new Promise(resolve => setTimeout(resolve, 500)); // 1000 ms = 1 second
