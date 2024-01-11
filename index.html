@@ -526,7 +526,7 @@
                             // Clear the text after 3 seconds (3000 milliseconds)
                             setTimeout(function() {
                                 infoDisplay.innerHTML = '';
-                            }, 5000);
+                            }, 10000);
 
                             if (window.ReactNativeWebView) {
                                 window.ReactNativeWebView.postMessage(JSON.stringify(json));
@@ -539,7 +539,7 @@
                             // Clear the text after 3 seconds (3000 milliseconds)
                             setTimeout(function() {
                                 infoDisplay.innerHTML = '';
-                            }, 5000);
+                            }, 10000);
                         }
                         await new Promise(resolve => setTimeout(resolve, 500)); // 1000 ms = 1 second
                         overlay.style.display = 'none';
