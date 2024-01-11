@@ -532,7 +532,12 @@
                             }
                         }
                         else {
-                            alert("We are not sure about this painting, try again."); // Show an alert if confidence is less than 2
+                            infoDisplay.innerHTML = 'We are not sure about this painting, try again.';
+
+                            // Clear the text after 3 seconds (3000 milliseconds)
+                            setTimeout(function() {
+                                infoDisplay.innerHTML = '';
+                            }, 5000);
                         }
                         await new Promise(resolve => setTimeout(resolve, 500)); // 1000 ms = 1 second
                         overlay.style.display = 'none';
