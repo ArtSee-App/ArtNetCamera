@@ -316,14 +316,15 @@
         .info-box {
     position: fixed;
     bottom: 10px;
-    right: 10px;
+    left: 0; /* Align to the left edge of the screen */
+    width: 100%; /* Set width to full width of the screen */
+    text-align: center; /* Center the text horizontally */
     color: black;
     padding: 10px;
     border-radius: 5px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    z-index: 1000; /* Ensure it's above other elements */
-    max-width: 300px; /* Adjust as needed */
-    background-color: rgba(0, 0, 0, 0);
+    z-index: 98; /* Ensure it's above other elements */
+    background-color: rgba(0, 0, 0, 0); /* Adjust background color for visibility */
+    box-sizing: border-box; /* Ensure padding is included in the width */
 }
 
 /* Additional styling as needed */
@@ -518,15 +519,16 @@
                             var paintingName = json.result[1];
                             var author = json.result[2];
                             var conf = json.imaginary_confidence;
-                            var displayMessage = "Painting: " + paintingName + "<br>Author: " + author + "<br>Imaginary confidence: " + conf;
+                            var currentDate = new Date();
+                            var hours = currentDate.getHours();
+                            var minutes = currentDate.getMinutes();
+                            var seconds = currentDate.getSeconds();
+
+                            var displayMessage = "Last painting detected at: " + hours + ":" + minutes + ":" + seconds + "<br>Painting: " + paintingName + "<br>Author: " + author + "<br>Imaginary confidence: " + conf;
 
                             var infoDisplay = document.getElementById('infoDisplay');
                             infoDisplay.innerHTML = displayMessage;
 
-                            // Clear the text after 3 seconds (3000 milliseconds)
-                            setTimeout(function() {
-                                infoDisplay.innerHTML = '';
-                            }, 10000);
 
                             if (window.ReactNativeWebView) {
                                 window.ReactNativeWebView.postMessage(JSON.stringify(json));
@@ -536,10 +538,6 @@
                             var infoDisplay = document.getElementById('infoDisplay');
                             infoDisplay.innerHTML = 'We are not sure about this painting, try again.';
 
-                            // Clear the text after 3 seconds (3000 milliseconds)
-                            setTimeout(function() {
-                                infoDisplay.innerHTML = '';
-                            }, 10000);
                         }
                         await new Promise(resolve => setTimeout(resolve, 500)); // 1000 ms = 1 second
                         overlay.style.display = 'none';
