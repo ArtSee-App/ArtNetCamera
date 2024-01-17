@@ -1,0 +1,302 @@
+html,
+body {
+    background-color: black;
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body,
+video,
+canvas {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* canvas is an element that goes on top of the video element which takes care of the drawing of all detections */
+video,
+canvas {
+    position: absolute;
+    object-fit: cover;
+    /* change to 'cover' to have the camera fullscreen, but the detection might not be perfectly alligned with the painting; change to 'contain' to have detections perfectly alligned but have blackbars on the screen*/
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+#floatingMessage {
+    visibility: visible; 
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Darker background */
+    color: rgb(0, 0, 0);
+    /* White text color */
+    padding: 8px;
+    border-radius: 10px;
+    font-size: 1.0em;
+    /* Soft shadow */
+    pointer-events: none;
+    /* Ignore pointer events */
+    white-space: nowrap;
+    /* Prevent text from wrapping */
+    transition: transform 0.3s ease;
+    /* Animate the transform property */
+    z-index: 2;
+
+}
+
+#loadingMessage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background-color: black;
+    color: white;
+    font-size: 1.2em;
+    z-index: 4;
+
+
+}
+
+#loadingText {
+    position: fixed;
+    bottom: 50px;
+    /* Adjust as needed */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    color: white;
+    z-index: 4;
+
+}
+
+
+#fetchingDataMessage {
+    visibility: hidden;
+    /* only becomes visible when a detection is selected */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(0, 0, 0);
+    color: white;
+    font-size: 1.2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99;
+
+}
+
+#fetchingDataText {
+    visibility: hidden;
+    /* only becomes visible when a detection is selected */
+    position: fixed;
+    bottom: 50px;
+    /* Adjust as needed */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    color: white;
+    z-index: 99;
+
+}
+
+#blackScreenOverlay {
+    visibility: hidden;
+    /* only becomes visible when holding the screen for 1s */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 101;
+}
+
+
+#overlay {
+    display: none;
+    /* becomes block when a detection is selected */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+    background-color: transparent;
+    z-index: 100;
+}
+
+/* styling for the loading icon, imported from the internet */
+.lds-hourglass {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.lds-hourglass:after {
+    content: " ";
+    display: block;
+    border-radius: 50%;
+    width: 0;
+    height: 0;
+    margin: 8px;
+    box-sizing: border-box;
+    border: 32px solid #fff;
+    border-color: #fff transparent #fff transparent;
+    animation: lds-hourglass 1.2s infinite;
+}
+
+@keyframes lds-hourglass {
+    0% {
+        transform: rotate(0);
+        animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+    }
+
+    50% {
+        transform: rotate(900deg);
+        animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
+
+    100% {
+        transform: rotate(1800deg);
+    }
+}
+
+#loadingMessage,
+#fetchingDataMessage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+/* styling for the div container of the controls */
+#zoomControls,
+#exposureControls {
+    position: absolute;
+    top: 50%;
+    /* Middle of the screen */
+    right: 10px;
+    /* Right side */
+    transform: translateY(-50%);
+    /* Adjust for the middle alignment */
+    z-index: 2;
+    /* Keeps it above other elements */
+    text-align: center;
+    /* Center-align the container */
+
+}
+
+
+/* same styling for both the zoom and exposure buttons */
+.zoom-button {
+    display: block;
+    width: 100px;
+    /* Set a specific width for buttons */
+    margin: 10px auto;
+    /* Auto margins for horizontal centering */
+    font-size: 15px;
+    padding: 5px;
+    border: none;
+    background-color: transparent;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+    text-align: center;
+    user-select: none;
+    outline: none;
+    /* Remove focus outline */
+    -webkit-tap-highlight-color: transparent;
+    /* Disable tap highlight on iOS */
+    -webkit-user-select: none;
+    /* Disable text selection */
+    user-select: none;
+    /* Standard syntax */
+
+}
+
+/* Override styles to have a transparent background for the zoom/exposure buttons when selected or tapped */
+.zoom-button:hover,
+.zoom-button:active,
+.zoom-button:focus {
+    background-color: transparent;
+    /* Keeps background transparent */
+    outline: none;
+    /* Removes focus outline */
+    box-shadow: none;
+    /* Removes any shadow */
+    -webkit-user-select: none;
+    /* Disable text selection */
+    user-select: none;
+    /* Standard syntax */
+}
+
+.zoom-button.selected {
+    color: #000000;
+}
+
+/* the moving dots animation after both loading and fetching texts */
+#loadingText span::after,
+#fetchingDataText span::after {
+    content: '';
+    animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+
+    0%,
+    20% {
+        content: '';
+    }
+
+    40% {
+        content: '.';
+    }
+
+    60% {
+        content: '..';
+    }
+
+    80%,
+    100% {
+        content: '...';
+    }
+}
+
+.info-box {
+    position: fixed;
+    bottom: 10px;
+    left: 0;
+    /* Align to the left edge of the screen */
+    width: 100%;
+    /* Set width to full width of the screen */
+    text-align: center;
+    /* Center the text horizontally */
+    color: black;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 98;
+    /* Ensure it's above other elements */
+    background-color: rgba(0, 0, 0, 0);
+    /* Adjust background color for visibility */
+    box-sizing: border-box;
+    /* Ensure padding is included in the width */
+}
