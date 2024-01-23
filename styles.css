@@ -27,7 +27,7 @@ canvas {
 }
 
 #floatingMessage {
-    visibility: visible; 
+    visibility: visible;
     position: fixed;
     top: 10px;
     left: 50%;
