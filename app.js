@@ -203,31 +203,25 @@ $(function () {
                 console.log(`Time taken to receive the json: ${endTime2 - startTime2} ms`); // Log the time taken to communicate with the API
 
                 //only send the json to the react native app if the imaginary confidence is above 2
-                if (json.imaginary_confidence >= 2) {
-                    var paintingName = json.result[1];
-                    var author = json.result[2];
-                    var conf = json.imaginary_confidence;
-                    var currentDate = new Date();
-                    var hours = currentDate.getHours();
-                    var minutes = currentDate.getMinutes();
-                    var seconds = currentDate.getSeconds();
+                var paintingName = json.result[1];
+                var author = json.result[2];
+                var conf = json.imaginary_confidence;
+                var currentDate = new Date();
+                var hours = currentDate.getHours();
+                var minutes = currentDate.getMinutes();
+                var seconds = currentDate.getSeconds();
 
-                    //displaying the detected painting on screen as well
-                    var displayMessage = "Last painting detected at: " + hours + ":" + minutes + ":" + seconds + "<br>Painting: " + paintingName + "<br>Author: " + author + "<br>Imaginary confidence: " + conf;
+                //displaying the detected painting on screen as well
+                var displayMessage = "Last painting detected at: " + hours + ":" + minutes + ":" + seconds + "<br>Painting: " + paintingName + "<br>Author: " + author + "<br>Imaginary confidence: " + conf;
 
-                    var infoDisplay = document.getElementById('infoDisplay');
-                    infoDisplay.innerHTML = displayMessage;
+                var infoDisplay = document.getElementById('infoDisplay');
+                infoDisplay.innerHTML = displayMessage;
 
-                    // this sends the json to react native if it is detected that the web app runs in ReactNativeWebView which is the react native browser
-                    if (window.ReactNativeWebView) {
-                        window.ReactNativeWebView.postMessage(JSON.stringify(json));
-                    }
+                // this sends the json to react native if it is detected that the web app runs in ReactNativeWebView which is the react native browser
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify(json));
                 }
-                else {
-                    //if the imaginary confidence is below 2, then display this message
-                    var infoDisplay = document.getElementById('infoDisplay');
-                    infoDisplay.innerHTML = 'We are not sure about this painting, try again.';
-                }
+
                 //once the json is fetched and sent to react native, the fetchind data overlay is hidden but we first set a 500ms timer to acount for the animation in react native between screens
                 await new Promise(resolve => setTimeout(resolve, 500)); // 1000 ms = 1 second
                 overlay.style.display = 'none';
