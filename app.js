@@ -190,7 +190,7 @@ $(function () {
         // Send the request to the FastAPI server
         try {
             let startTime2 = performance.now(); // Start the timer which decides how long the communication with the API takes
-            let response = await fetch('https://api.artvista.app/image_search/', {
+            let response = await fetch('https://api.artvista.app/artwork_search_main/', {
                 method: 'POST',
                 body: formData // FormData will be sent as 'multipart/form-data'
             });
